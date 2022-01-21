@@ -27,8 +27,13 @@ async def cancel(message: types.Message, state: FSMContext) -> None:
         reply_markup=types.ReplyKeyboardRemove(),
     )
 
+async def test(message: types.Message, state: FSMContext) -> None:
+    await message.answer(message.html_text, parse_mode='HTML')
+
 
 def register_handlers_common(dp: Dispatcher):
     dp.register_message_handler(start, commands=cmd.start_cmd)
     dp.register_message_handler(help, commands=cmd.help_cmd)
     dp.register_message_handler(cancel, commands=cmd.cancel_cmd, state="*")
+
+

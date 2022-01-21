@@ -2,7 +2,8 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 import commands as cmd
-from keyboards import startup_keyboard
+from keyboards import startup_keyboard, confirm_keyboard
+from keyboards.confirm_keyboard import buttons
 # Эти значения далее будут подставляться в итоговый текст, отсюда
 # такая на первый взгляд странная форма прилагательных
 available_subjects = ["Химия", "Биология", "Информатика", 'Математика']
@@ -60,17 +61,15 @@ async def course_chosen(message: types.Message, state: FSMContext):
         return
     await state.update_data(chosen_course=message.text.lower())
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.row('Нет', 'Да')
     # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
     user_data = await state.get_data()
     await message.answer(f"Вы покупаете {user_data['chosen_course']} от школы {user_data['chosen_school']}"
-                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=keyboard)
+                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=confirm_keyboard)
 
 
 async def confirm(message: types.Message, state: FSMContext):
-    if message.text.lower() not in lower_list(['Нет', 'Да']):
+    if message.text.lower() not in lower_list(buttons):
         await message.answer("Пожалуйста, используйте клавиатуру ниже.")
         return
     if message.text.lower() == 'нет':
