@@ -1,18 +1,15 @@
 from aiogram import Bot
 import asyncio
 from aiogram.types.bot_command import BotCommand
-from handlers.choose_course import register_handlers_course
-from handlers.common import register_handlers_common
+from handlers import register_handlers_course, register_handlers_common
 from misc import dp, bot
-
+import commands as cmd
 async def set_commands(bot: Bot):
     commands = [
-        BotCommand(command="/course", description="Купить курс"),
-        BotCommand(command="/cancel", description="Отменить текущее действие")
+        BotCommand(command=cmd.start_cmd, description="Общая информация"),
+        BotCommand(command=cmd.help_cmd, description="Помощь")
     ]
     await bot.set_my_commands(commands)
-
-
 async def main():
     # Регистрация хэндлеров
     register_handlers_course(dp)

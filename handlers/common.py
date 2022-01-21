@@ -1,24 +1,34 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
+import commands as cmd
+from keyboards import startup_keyboard
 
 
-async def cmd_start(message: types.Message, state: FSMContext):
-    await state.finish()
+async def start(message: types.Message, state: FSMContext):
     await message.answer(
-        "Привет! Тут ты можешь купить курсы для подготовки к ЕГЭ.",
+        "Добро пожаловать! Здесь можно купить вебинары ЕГЭ по нужным тебе предметам.",
+        reply_markup=startup_keyboard)
+
+
+async def help(message: types.Message, state: FSMContext):
+    await message.answer(
+        '''Что умеет бот и как им пользоваться?\n
+        «Купить курс»''',
     )
 
-async def cmd_cancel(message: types.Message, state: FSMContext) -> None:
+
+async def cancel(message: types.Message, state: FSMContext) -> None:
     """
     Allow user to cancel any action
     """
     await state.finish()
     await message.answer(
-        "Cancelled.",
+        "Действие отменено",
         reply_markup=types.ReplyKeyboardRemove(),
     )
 
+
 def register_handlers_common(dp: Dispatcher):
-    dp.register_message_handler(cmd_start, commands="start", state="*")
-    dp.register_message_handler(cmd_cancel, commands="cancel", state="*")
+    dp.register_message_handler(start, commands=cmd.start_cmd)
+    dp.register_message_handler(help, commands=cmd.help_cmd)
+    dp.register_message_handler(cancel, commands=cmd.cancel_cmd, state="*")
