@@ -1,9 +1,11 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 import commands as cmd
-from keyboards import startup_keyboard, confirm_keyboard
+from keyboards import Startup_keyboard, Confirm_keyboard
 from keyboards.confirm_keyboard import buttons
+
 # Эти значения далее будут подставляться в итоговый текст, отсюда
 # такая на первый взгляд странная форма прилагательных
 available_subjects = ["Химия", "Биология", "Информатика", 'Математика']
@@ -18,6 +20,7 @@ class CourseOrder(StatesGroup):
     waiting_for_confirmation = State()
 
 
+# TODO: выбор параметров inline
 async def subjects_start(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
     for subject in available_subjects:
@@ -65,7 +68,7 @@ async def course_chosen(message: types.Message, state: FSMContext):
     await CourseOrder.next()
     user_data = await state.get_data()
     await message.answer(f"Вы покупаете {user_data['chosen_course']} от школы {user_data['chosen_school']}"
-                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=confirm_keyboard)
+                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=Confirm_keyboard)
 
 
 async def confirm(message: types.Message, state: FSMContext):
@@ -78,13 +81,13 @@ async def confirm(message: types.Message, state: FSMContext):
         await subjects_start(message)
     else:
         # Для последовательных шагов можно не указывать название состояния, обходясь next()
-        await message.answer("Принято.", reply_markup=startup_keyboard)
+        await message.answer("Принято.", reply_markup=Startup_keyboard)
         print_dict(await state.get_data())
         await state.finish()
 
 
 def register_handlers_course(dp: Dispatcher):
-    dp.register_message_handler(subjects_start, lambda msg: msg.text.lower() == cmd.buy_course_cmd, state="*")
+    dp.register_message_handler(subjects_start, Text(cmd.buy_course_cmd, ignore_case=True), state="*")
     dp.register_message_handler(subjects_chosen, state=CourseOrder.waiting_for_subject)
     dp.register_message_handler(schools_chosen, state=CourseOrder.waiting_for_school)
     dp.register_message_handler(course_chosen, state=CourseOrder.waiting_for_course)

@@ -1,13 +1,15 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
+
 import commands as cmd
-from keyboards import startup_keyboard
+from keyboards import Startup_keyboard
 
 
 async def start(message: types.Message, state: FSMContext):
     await message.answer(
         "Добро пожаловать! Здесь можно купить вебинары ЕГЭ по нужным тебе предметам.",
-        reply_markup=startup_keyboard)
+        reply_markup=Startup_keyboard)
 
 
 async def help(message: types.Message, state: FSMContext):
@@ -24,7 +26,7 @@ async def cancel(message: types.Message, state: FSMContext) -> None:
     await state.finish()
     await message.answer(
         "Действие отменено",
-        reply_markup=types.ReplyKeyboardRemove(),
+        reply_markup=Startup_keyboard,
     )
 
 async def test(message: types.Message, state: FSMContext) -> None:
@@ -32,8 +34,10 @@ async def test(message: types.Message, state: FSMContext) -> None:
 
 
 def register_handlers_common(dp: Dispatcher):
-    dp.register_message_handler(start, commands=cmd.start_cmd)
-    dp.register_message_handler(help, commands=cmd.help_cmd)
+    dp.register_message_handler(start, commands=cmd.start_cmd, state=None)
+    dp.register_message_handler(help, commands=cmd.help_cmd, state=None)
     dp.register_message_handler(cancel, commands=cmd.cancel_cmd, state="*")
+    dp.register_message_handler(cancel, Text(equals=cmd.cancel_cmd, ignore_case=True), state="*")
+
 
 

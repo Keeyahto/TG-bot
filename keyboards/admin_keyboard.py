@@ -2,7 +2,7 @@ from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButt
 import commands as cmd
 from aiogram import types
 
-buttons = ['Нет', 'Да']
+buttons = ['']
 
-Confirm_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-Confirm_keyboard.row(*buttons)
+Admin_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+Admin_keyboard.row(*buttons)
