@@ -3,9 +3,8 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 import commands as cmd
-from keyboards import Startup_keyboard, Confirm_keyboard
+from keyboards import ReplyStartupKeyboard, ReplyConfirmKeyboard
 from keyboards.confirm_keyboard import buttons
-
 # Эти значения далее будут подставляться в итоговый текст, отсюда
 # такая на первый взгляд странная форма прилагательных
 available_subjects = ["Химия", "Биология", "Информатика", 'Математика']
@@ -68,7 +67,7 @@ async def course_chosen(message: types.Message, state: FSMContext):
     await CourseOrder.next()
     user_data = await state.get_data()
     await message.answer(f"Вы покупаете {user_data['chosen_course']} от школы {user_data['chosen_school']}"
-                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=Confirm_keyboard)
+                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=ReplyConfirmKeyboard)
 
 
 async def confirm(message: types.Message, state: FSMContext):
@@ -81,7 +80,7 @@ async def confirm(message: types.Message, state: FSMContext):
         await subjects_start(message)
     else:
         # Для последовательных шагов можно не указывать название состояния, обходясь next()
-        await message.answer("Принято.", reply_markup=Startup_keyboard)
+        await message.answer("Принято.", reply_markup=ReplyStartupKeyboard)
         print_dict(await state.get_data())
         await state.finish()
 

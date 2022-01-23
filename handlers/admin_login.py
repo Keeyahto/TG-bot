@@ -1,18 +1,18 @@
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 import commands as cmd
-from keyboards import Startup_keyboard
+from keyboards import ReplyStartupKeyboard
 from config import config
-from keyboards import Admin_keyboard, Moderator_keyboard
+from keyboards import ReplyAdminKeyboard, ReplyModeratorKeyboard, InlineModeratorKeyboard
 
 
 async def admin_login(message: types.Message):
-    await message.answer("Вход в админ панель выполнен", reply_markup=Admin_keyboard)
+    await message.answer("Вход в админ панель выполнен", reply_markup=ReplyAdminKeyboard)
 
 
 async def moderator_login(message: types.Message):
     await message.answer('''Вход в панель модератора выполнен\nПока вы можете «Загрузить курсы»
-                            ''', reply_markup=Moderator_keyboard)
+                            ''', reply_markup=InlineModeratorKeyboard)
 
 
 def register_handlers_admin_log(dp: Dispatcher):

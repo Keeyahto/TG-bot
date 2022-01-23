@@ -1,9 +1,14 @@
-from aiogram import Bot, Dispatcher
+from aiogram import Dispatcher
 import asyncio
 from aiogram.types.bot_command import BotCommand
-from handlers import register_handlers_course, register_handlers_common, register_handlers_upload_course, register_handlers_admin_log
-from misc import dp, bot
+from handlers import *
+from misc import dp
 import commands as cmd
+from models.base import init
+
+
+async def on_startup(**kwargs):
+    await init()
 
 
 async def set_commands(dp: Dispatcher):
@@ -25,6 +30,7 @@ async def main():
     await set_commands(dp)
     # Запуск поллинга
     # await dp.skip_updates()  # пропуск накопившихся апдейтов (необязательно)
+    await on_startup()
     await dp.start_polling()
 
 

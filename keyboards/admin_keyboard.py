@@ -4,5 +4,5 @@ from aiogram import types
 
 buttons = ['']
 
-Admin_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-Admin_keyboard.row(*buttons)
+ReplyAdminKeyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+ReplyAdminKeyboard.row(*buttons)
