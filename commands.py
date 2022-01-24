@@ -16,6 +16,7 @@ _commands = {
     'upload_course_cmd': 'Загрузить курсы',
     'moderator_login_cmd': 'moderator',
     'admin_login_cmd': 'admin',
+    'my_account': 'Мой аккаунт'
 }
 
 

@@ -3,8 +3,10 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 import commands as cmd
-from keyboards import ReplyStartupKeyboard, ReplyConfirmKeyboard
+from keyboards import ReplyStartupKeyboard, ReplyConfirmKeyboard, create_dynamic_inline_keyboard, InlineConfirmKeyboard
 from keyboards.confirm_keyboard import buttons
+from models import Courses
+
 # Эти значения далее будут подставляться в итоговый текст, отсюда
 # такая на первый взгляд странная форма прилагательных
 available_subjects = ["Химия", "Биология", "Информатика", 'Математика']
@@ -19,78 +21,64 @@ class CourseOrder(StatesGroup):
     waiting_for_confirmation = State()
 
 
-# TODO: выбор параметров inline
 async def subjects_start(message: types.Message):
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for subject in available_subjects:
-        keyboard.add(subject)
+    keyboard = create_dynamic_inline_keyboard(
+        [x[0] for x in await Courses.filter().order_by('subject').distinct().values_list('subject')])
     await message.answer("Выберите предмет:", reply_markup=keyboard)
     await CourseOrder.waiting_for_subject.set()
 
 
-async def subjects_chosen(message: types.Message, state: FSMContext):
-    await state.update_data(user_id=message.from_user.id)
-    if message.text.lower() not in lower_list(available_subjects):
-        await message.answer("Пожалуйста, выберите предмет, используя клавиатуру ниже.")
-        return
-    await state.update_data(chosen_subject=message.text.lower())
+async def subjects_chosen(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(user_id=callback.from_user.id)
+    await state.update_data(chosen_subject=callback.data)
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for school in available_schools:
-        keyboard.add(school)
+    keyboard = create_dynamic_inline_keyboard(
+        [x[0] for x in await Courses.all().order_by('school').distinct().values_list('school')])
     # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
-    await message.answer("Теперь выберите школу:", reply_markup=keyboard)
+    await callback.message.answer("Теперь выберите школу:", reply_markup=keyboard)
 
 
-async def schools_chosen(message: types.Message, state: FSMContext):
-    if message.text.lower() not in lower_list(available_schools):
-        await message.answer("Пожалуйста, выберите школу, используя клавиатуру ниже.")
-        return
-    await state.update_data(chosen_school=message.text.lower())
+async def schools_chosen(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(chosen_school=callback.data)
+    async with state.proxy() as data:
+        keyboard = create_dynamic_inline_keyboard(
+            [x[0] for x in
+             await Courses.filter(school=data['chosen_school'], subject=data['chosen_subject']).values_list('name')])
 
-    keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for course in available_courses:
-        keyboard.add(course)
     # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
-    await message.answer("Пора выбрать интересующий Вас курс:", reply_markup=keyboard)
+    await callback.message.answer("Пора выбрать интересующий Вас курс:", reply_markup=keyboard)
 
 
-async def course_chosen(message: types.Message, state: FSMContext):
-    if message.text.lower() not in lower_list(available_courses):
-        await message.answer("Пожалуйста, выберите курс, используя клавиатуру ниже.")
-        return
-    await state.update_data(chosen_course=message.text.lower())
+async def course_chosen(callback: types.CallbackQuery, state: FSMContext):
+    await state.update_data(chosen_course=callback.data)
 
     # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
     user_data = await state.get_data()
-    await message.answer(f"Вы покупаете {user_data['chosen_course']} от школы {user_data['chosen_school']}"
-                         f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=ReplyConfirmKeyboard)
+    await callback.message.answer(f"Вы покупаете {user_data['chosen_course']} от школы {user_data['chosen_school']}"
+                                  f" по {user_data['chosen_subject']}.\n Все верно?", reply_markup=InlineConfirmKeyboard)
 
 
-async def confirm(message: types.Message, state: FSMContext):
-    if message.text.lower() not in lower_list(buttons):
-        await message.answer("Пожалуйста, используйте клавиатуру ниже.")
-        return
-    if message.text.lower() == 'нет':
+async def confirm(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == 'NO':
         await state.reset_state()
-        await message.answer("Хорошо.")
-        await subjects_start(message)
+        await callback.message.answer("Хорошо.")
+        await subjects_start(callback.message)
     else:
         # Для последовательных шагов можно не указывать название состояния, обходясь next()
-        await message.answer("Принято.", reply_markup=ReplyStartupKeyboard)
+        await callback.message.answer("Принято.", reply_markup=ReplyStartupKeyboard)
         print_dict(await state.get_data())
         await state.finish()
 
 
 def register_handlers_course(dp: Dispatcher):
     dp.register_message_handler(subjects_start, Text(cmd.buy_course_cmd, ignore_case=True), state="*")
-    dp.register_message_handler(subjects_chosen, state=CourseOrder.waiting_for_subject)
-    dp.register_message_handler(schools_chosen, state=CourseOrder.waiting_for_school)
-    dp.register_message_handler(course_chosen, state=CourseOrder.waiting_for_course)
-    dp.register_message_handler(confirm, state=CourseOrder.waiting_for_confirmation)
+    dp.register_callback_query_handler(subjects_chosen, state=CourseOrder.waiting_for_subject)
+    dp.register_callback_query_handler(schools_chosen, state=CourseOrder.waiting_for_school)
+    dp.register_callback_query_handler(course_chosen, state=CourseOrder.waiting_for_course)
+    dp.register_callback_query_handler(confirm, state=CourseOrder.waiting_for_confirmation)
 
 
 def lower_list(items: list):

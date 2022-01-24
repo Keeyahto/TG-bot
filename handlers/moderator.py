@@ -22,7 +22,6 @@ class FDMModerator(StatesGroup):
     upload_again = State()
 
 
-# TODO: выбор парамтров inline для загрузки курсов
 async def subjects_start(callback: types.CallbackQuery):
     keyboard = create_dynamic_inline_keyboard(
         [x[0] for x in await Courses.all().order_by('subject').distinct().values_list('subject')])
