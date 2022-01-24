@@ -2,9 +2,9 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
+
 import commands as cmd
-from keyboards import ReplyStartupKeyboard, ReplyConfirmKeyboard, create_dynamic_inline_keyboard, InlineConfirmKeyboard
-from keyboards.confirm_keyboard import buttons
+from keyboards import ReplyStartupKeyboard, create_dynamic_inline_keyboard, InlineConfirmKeyboard
 from models import Courses
 
 # Эти значения далее будут подставляться в итоговый текст, отсюда
@@ -70,6 +70,14 @@ async def confirm(callback: types.CallbackQuery, state: FSMContext):
         # Для последовательных шагов можно не указывать название состояния, обходясь next()
         await callback.message.answer("Принято.", reply_markup=ReplyStartupKeyboard)
         print_dict(await state.get_data())
+        async with state.proxy() as data:
+            school = data['chosen_school']
+            subject = data['chosen_subject']
+            name = data['chosen_course']
+
+        current_course = await Courses.get(school=school, subject=subject, name=name).prefetch_related('webinars')
+        webinars = await current_course.webinars.limit(1)
+        await callback.message.answer(webinars[0].text)
         await state.finish()
 
 

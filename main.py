@@ -1,14 +1,16 @@
-from aiogram import Dispatcher
 import asyncio
+
+from aiogram import Dispatcher
 from aiogram.types.bot_command import BotCommand
-from handlers import *
-from misc import dp
+from aiogram.utils.executor import start_webhook
+
 import commands as cmd
+from handlers import *
+from misc import dp, Bot, WEBHOOK_URL, WEBHOOK_PATH, WEBAPP_HOST, WEBAPP_PORT
 from models.base import init
 
 
-async def on_startup(**kwargs):
-    await init()
+# async def on_startup(dp):
 
 
 async def set_commands(dp: Dispatcher):
@@ -19,7 +21,7 @@ async def set_commands(dp: Dispatcher):
     ])
 
 
-async def main():
+async def main(dp):
     # Регистрация хэндлеров
     register_handlers_common(dp)
     register_handlers_course(dp)
@@ -30,9 +32,19 @@ async def main():
     await set_commands(dp)
     # Запуск поллинга
     # await dp.skip_updates()  # пропуск накопившихся апдейтов (необязательно)
-    await on_startup()
-    await dp.start_polling()
+    await init()
+    await Bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main(dp))
+    loop.close()
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        skip_updates=True,
+        on_startup=main,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
