@@ -1,3 +1,5 @@
+import os
+
 from aiogram import Bot
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import Dispatcher
@@ -16,7 +18,7 @@ WEBHOOK_URL = f'{WEBHOOK_HOST}{WEBHOOK_PATH}'
 
 # webserver settings
 WEBAPP_HOST = '0.0.0.0'
-WEBAPP_PORT = config['GENERAL']['PORT']
+WEBAPP_PORT = int(os.getenv("PORT"))
 
 bot = Bot(token=config['GENERAL']['TELEGRAM_TOKEN'])
 dp = Dispatcher(bot, storage=storage)
