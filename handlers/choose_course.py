@@ -23,7 +23,7 @@ class CourseOrder(StatesGroup):
 
 async def subjects_start(message: types.Message):
     keyboard = create_dynamic_inline_keyboard(
-        [x[0] for x in await Courses.filter().order_by('subject').distinct().values_list('subject')])
+        [x[0] for x in await Courses.filter().distinct().values_list('subject')])
     await message.answer("Выберите предмет:", reply_markup=keyboard)
     await CourseOrder.waiting_for_subject.set()
 
@@ -32,9 +32,12 @@ async def subjects_chosen(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(user_id=callback.from_user.id)
     await state.update_data(chosen_subject=callback.data)
 
-    keyboard = create_dynamic_inline_keyboard(
-        [x[0] for x in await Courses.all().order_by('school').distinct().values_list('school')])
-    # Для последовательных шагов можно не указывать название состояния, обходясь next()
+    async with state.proxy() as data:
+        keyboard = create_dynamic_inline_keyboard(
+            [x[0] for x in
+             await Courses.filter(subject=data['chosen_subject']).values_list('school')])
+
+        # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
     await callback.message.answer("Теперь выберите школу:", reply_markup=keyboard)
 
@@ -44,7 +47,7 @@ async def schools_chosen(callback: types.CallbackQuery, state: FSMContext):
     async with state.proxy() as data:
         keyboard = create_dynamic_inline_keyboard(
             [x[0] for x in
-             await Courses.filter(school=data['chosen_school'], subject=data['chosen_subject']).values_list('name')])
+             await Courses.filter(subject=data['chosen_subject'], school=data['chosen_school']).values_list('name')])
 
     # Для последовательных шагов можно не указывать название состояния, обходясь next()
     await CourseOrder.next()
@@ -69,7 +72,6 @@ async def confirm(callback: types.CallbackQuery, state: FSMContext):
     else:
         # Для последовательных шагов можно не указывать название состояния, обходясь next()
         await callback.message.answer("Принято.", reply_markup=ReplyStartupKeyboard)
-        print_dict(await state.get_data())
         async with state.proxy() as data:
             school = data['chosen_school']
             subject = data['chosen_subject']
@@ -77,7 +79,7 @@ async def confirm(callback: types.CallbackQuery, state: FSMContext):
 
         current_course = await Courses.get(school=school, subject=subject, name=name).prefetch_related('webinars')
         webinars = await current_course.webinars.limit(1)
-        await callback.message.answer(webinars[0].text)
+        await callback.message.answer(webinars[0].text, parse_mode='HTML')
         await state.finish()
 
 

@@ -1,14 +1,14 @@
+import asyncio
+
 from aiogram import Dispatcher
 from aiogram.types.bot_command import BotCommand
 from aiogram.utils.executor import start_webhook
 
 import commands as cmd
 from handlers import *
+from is_webhook_method import webhook_method
 from misc import dp, bot, WEBHOOK_URL, WEBHOOK_PATH, WEBAPP_HOST, WEBAPP_PORT
 from models.base import init
-
-
-# async def on_startup(dp):
 
 
 async def set_commands(dp: Dispatcher):
@@ -25,7 +25,7 @@ async def on_shutdown(dp):
     await dp.storage.wait_closed()
 
 
-async def on_startup(dp):
+async def on_startup(dp, webhook=True):
     # Регистрация хэндлеров
     register_handlers_common(dp)
     register_handlers_course(dp)
@@ -37,7 +37,13 @@ async def on_startup(dp):
     # Запуск поллинга
     # await dp.skip_updates()  # пропуск накопившихся апдейтов (необязательно)
     await init()
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    if webhook:
+        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+
+
+async def no_webhook_main():
+    await on_startup(dp, webhook=False)
+    await dp.start_polling()
 
 
 def main():
@@ -53,9 +59,7 @@ def main():
 
 
 if __name__ == '__main__':
-    '''
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main(dp))
-    loop.close()
-    '''
-    main()
+    if webhook_method:
+        main()
+    else:
+        asyncio.run(no_webhook_main())
